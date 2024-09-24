@@ -6,6 +6,7 @@ import wandb
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from ddpm import script_utils
+from tqdm import tqdm
 
 
 def main():
@@ -27,7 +28,7 @@ def main():
 
             run = wandb.init(
                 project=args.project_name,
-                entity='treaptofun',
+                # entity='treaptofun',
                 config=vars(args),
                 name=args.run_name,
             )
@@ -36,14 +37,14 @@ def main():
         batch_size = args.batch_size
 
         train_dataset = datasets.CIFAR10(
-            root='./cifar_train',
+            root='/media/sda1/junha/DDPM/cifar10_data/train',  # train dataset path
             train=True,
             download=True,
             transform=script_utils.get_transform(),
         )
 
         test_dataset = datasets.CIFAR10(
-            root='./cifar_test',
+            root='/media/sda1/junha/DDPM/cifar10_data/test',  # test dataset path
             train=False,
             download=True,
             transform=script_utils.get_transform(),
@@ -60,7 +61,7 @@ def main():
         
         acc_train_loss = 0
 
-        for iteration in range(1, args.iterations + 1):
+        for iteration in tqdm(range(1, args.iterations + 1)):
             diffusion.train()
 
             x, y = next(train_loader)
@@ -139,8 +140,8 @@ def create_argparser():
         log_to_wandb=True,
         log_rate=1000,
         checkpoint_rate=1000,
-        log_dir="~/ddpm_logs",
-        project_name=None,
+        log_dir="/media/sda1/junha/DDPM/cifar10_ckpt",
+        project_name="DDPM",
         run_name=run_name,
 
         model_checkpoint=None,
