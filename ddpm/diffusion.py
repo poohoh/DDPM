@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 
 from functools import partial
 from copy import deepcopy
@@ -98,15 +99,29 @@ class GaussianDiffusion(nn.Module):
             )
 
     @torch.no_grad()
-    def sample(self, batch_size, device, y=None, use_ema=True):
+    def sample(self, batch_size, device, y=None, use_ema=True, save_dir=None):
         if y is not None and batch_size != len(y):
             raise ValueError("sample batch size different from length of given y")
 
         x = torch.randn(batch_size, self.img_channels, *self.img_size, device=device)
+
+        if save_dir:
+            img = x.cpu().detach()
+            img = ((img + 1) / 2).clip(0, 1)
+            torchvision.utils.save_image(img, f"{save_dir}/initial_noise.png")
+            print('image saved: initial_noise.png')
         
         for t in range(self.num_timesteps - 1, -1, -1):
             t_batch = torch.tensor([t], device=device).repeat(batch_size)
             x = self.remove_noise(x, t_batch, y, use_ema)
+
+            if t % 50 == 0:
+                # save as image
+                if save_dir:
+                    img = x.cpu().detach()
+                    img = ((img + 1) / 2).clip(0, 1)
+                    torchvision.utils.save_image(img, f"{save_dir}/output_image_step_{t}.png")
+                    print('image saved: output_image_step_'+str(t)+'.png')
 
             if t > 0:
                 x += extract(self.sigma, t_batch, x.shape) * torch.randn_like(x)
